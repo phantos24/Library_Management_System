@@ -1,0 +1,43 @@
+<h1>My Books</h1>
+<p>Welcome, {{ user.username }}!
+<form method="POST" action="{% url 'logout' %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit">Log out</button>
+</form>
+</p>
+<a href="{% url 'main_hall' %}">Back to Main Hall</a>
+
+{% if user.is_staff %}
+<a href="{% url 'manage_books' %}">Manage Books</a>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>ISBN</th>
+            <th>Book Published Date</th>
+            <th>Borrow Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transaction in borrowed_books %}
+        <tr>
+            <td>{{ transaction.book.title }}</td>
+            <td>{{ transaction.book.author }}</td>
+            <td>{{ transaction.book.isbn }}</td>
+            <td>{{ transaction.book.published_date }}</td>
+            <td>{{ transaction.checkout_date }}</td>
+            <td>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="transaction_id" value="{{ transaction.id }}">
+                    <button type="submit">Return</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

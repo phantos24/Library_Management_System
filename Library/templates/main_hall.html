@@ -1,0 +1,93 @@
+<h1>Main Hall</h1>
+<p>Welcome, {{ user.username }}!
+<form method="POST" action="{% url 'logout' %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit">Log out</button>
+</form>
+</p>
+<a href="{% url 'my_books' %}">My Books</a>
+
+{% if user.is_staff %}
+<a href="{% url 'manage_books' %}">Manage Books</a>
+{% endif %}
+{% if messages %}
+
+<ul>
+    {% for message in messages %}
+    <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<!-- Search Filters -->
+<form method="GET" action="{% url 'main_hall' %}">
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="text" name="title" placeholder="Search by Title" value="{{ request.GET.title }}"
+            style="padding: 5px;">
+        <input type="text" name="author" placeholder="Search by Author" value="{{ request.GET.author }}"
+            style="padding: 5px;">
+        <input type="text" name="isbn" placeholder="Search by ISBN" value="{{ request.GET.isbn }}"
+            style="padding: 5px;">
+        <button type="submit" style="padding: 5px 10px;">Search</button>
+    </div>
+</form>
+
+<!-- Availability Filter -->
+<form method="GET" action="{% url 'main_hall' %}" id="availability-form">
+    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+        <label for="available_only" style="margin-right: 10px;">
+            <input type="checkbox" name="available_only" id="available_only" {% if request.GET.available_only %} checked
+                {% endif %}>
+            Show only available books
+        </label>
+    </div>
+</form>
+
+<!-- Books Table -->
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>ISBN</th>
+            <th>Book Published Date</th>
+            <th>Available Copies</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if books %}
+        {% for book in books %}
+        <tr>
+            <td>{{ book.title }}</td>
+            <td>{{ book.author }}</td>
+            <td>{{ book.isbn }}</td>
+            <td>{{ book.published_date }}</td>
+            <td>{{ book.available_copies }}</td>
+            <td>
+                {% if book.available_copies > 0 %}
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="book_id" value="{{ book.id }}">
+                    <button type="submit">Borrow</button>
+                </form>
+                {% else %}
+                <p>Not Available</p>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td colspan="6">No books found for your search criteria.</td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<!-- JavaScript to automatically submit the form when the checkbox is toggled -->
+<script>
+    document.getElementById('available_only').addEventListener('change', function () {
+        document.getElementById('availability-form').submit();
+    });
+</script>

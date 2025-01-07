@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the Library</title>
+</head>
+
+<body>
+    <h1>Welcome to the Library Management System</h1>
+    <p>We're excited to have you here. Please log in to continue or register if you're a new user.</p>
+
+    <!-- Display the login form -->
+    <h2>Login</h2>
+    <form method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Login</button>
+    </form>
+
+    <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
+
+    {% if form.non_field_errors %}
+    <div class="error">
+        <ul>
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+    <p>Welcome, {{ user.username }}!</p>
+    <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">Log out</button>
+    </form>
+    {% endif %}
+</body>
+
+</html>
