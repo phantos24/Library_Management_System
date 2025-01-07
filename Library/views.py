@@ -3,7 +3,7 @@ from rest_framework import viewsets, filters
 from django.contrib.auth.decorators import user_passes_test, login_required
 from .models import User, Book, Transaction
 from .Serializers import UserSerializer, BookSerializer, TransactionSerializer
-from .forms import UserCreationForm, BookForm
+from .forms import UserCreationForms, BookForm
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
 from django_filters.rest_framework import DjangoFilterBackend
@@ -31,13 +31,13 @@ def register(request):
         return redirect('main_hall')
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = UserCreationForms(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)  # Log the user in immediately after registration
             return redirect('homepage')  # Redirect to homepage or another page
     else:
-        form = UserCreationForm()
+        form = UserCreationForms()
     return render(request, 'register.html', {'form': form})
 
 @login_required
