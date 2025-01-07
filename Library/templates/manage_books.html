@@ -8,6 +8,15 @@
 <a href="{% url 'main_hall' %}">Back to Main Hall</a>
 <a href="{% url 'my_books' %}">My Books</a>
 
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
 <!-- Add Book Form -->
 <h2>Add Book</h2>
 <form method="POST">

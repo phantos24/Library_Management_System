@@ -121,6 +121,8 @@ def manage_books(request):
                 form.save()
                 messages.success(request, "Book added successfully!")
                 return redirect('manage_books')
+            else:
+                messages.error(request, "Failed to add the book. there is a book with the same ISBN in the library.")
 
         elif 'edit' in request.POST:
             book_id = request.POST.get('book_id')
@@ -130,10 +132,18 @@ def manage_books(request):
                 form.save()
                 messages.success(request, "Book updated successfully!")
                 return redirect('manage_books')
+            else:
+                messages.error(request, "Failed to add the book. there is a book with the same ISBN in the library.")
 
         elif 'delete' in request.POST:
             book_id = request.POST.get('book_id')
             book = get_object_or_404(Book, id=book_id)
+           
+            if Transaction.objects.filter(book=book, return_date__isnull=True).exists():
+                messages.error(request, "Cannot delete this book because it is currently borrowed.")
+                return redirect('manage_books')
+
+            # If the book is not borrowed, proceed with deletion
             book.delete()
             messages.success(request, "Book deleted successfully!")
             return redirect('manage_books')
