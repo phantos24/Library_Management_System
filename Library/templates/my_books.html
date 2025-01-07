@@ -1,10 +1,11 @@
 <h1>My Books</h1>
-<p>Welcome, {{ user.username }}!
+<p>Welcome, {{ user.username }}!</p>
+
 <form method="POST" action="{% url 'logout' %}" style="display:inline;">
     {% csrf_token %}
     <button type="submit">Log out</button>
 </form>
-</p>
+
 <a href="{% url 'main_hall' %}">Back to Main Hall</a>
 
 {% if user.is_staff %}
@@ -19,6 +20,7 @@
             <th>ISBN</th>
             <th>Book Published Date</th>
             <th>Borrow Date</th>
+            <th>Return Date</th>
             <th>Action</th>
         </tr>
     </thead>
@@ -30,12 +32,17 @@
             <td>{{ transaction.book.isbn }}</td>
             <td>{{ transaction.book.published_date }}</td>
             <td>{{ transaction.checkout_date }}</td>
+            <td>{{ transaction.return_date|default:"Not returned" }}</td>
             <td>
+                {% if not transaction.return_date %}
                 <form method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="transaction_id" value="{{ transaction.id }}">
                     <button type="submit">Return</button>
                 </form>
+                {% else %}
+                <span>Returned</span>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}

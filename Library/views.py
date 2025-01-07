@@ -90,12 +90,14 @@ def main_hall(request):
 
 @login_required
 def my_books(request):
-    borrowed_books = Transaction.objects.filter(user=request.user, return_date__isnull=True)
+    # Get both borrowed and returned books
+    borrowed_books = Transaction.objects.filter(user=request.user).order_by('-checkout_date')
 
     if request.method == 'POST':
         transaction_id = request.POST.get('transaction_id')
         transaction = Transaction.objects.get(id=transaction_id, user=request.user)
         if transaction and not transaction.return_date:
+            # Set the return date to mark the book as returned
             transaction.return_date = timezone.now()
             transaction.save()
 
