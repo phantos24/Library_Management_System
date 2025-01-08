@@ -7,6 +7,12 @@ class User(AbstractUser):
     date_of_membership = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        permissions = [
+            ('can_manage_users', 'Can manage users'),  # Superusers only
+            ('can_manage_books', 'Can manage books'),  # Admins
+        ]
+    
     def __str__(self):
         return self.username
 
@@ -18,6 +24,11 @@ class Book(models.Model):
     published_date = models.DateField()
     available_copies = models.PositiveIntegerField()
 
+    class Meta:
+        permissions = [
+            ('can_manage_books', 'Can manage books'),
+        ]
+    
     def __str__(self):
         return self.title
 

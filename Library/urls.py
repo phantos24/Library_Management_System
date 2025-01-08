@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/books/', views.BookListAPIView.as_view(), name='book_list_api'),
     path('manage_books/', views.manage_books, name='manage_books'),
     path('manage_books/edit/<int:book_id>/', views.edit_book, name='edit_book'),
+    path('manage_users/', views.manage_users, name='manage_users'),
 ]

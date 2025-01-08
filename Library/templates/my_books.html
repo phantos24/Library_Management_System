@@ -1,14 +1,18 @@
 <h1>My Books</h1>
-<p>Welcome, {{ user.username }}!</p>
+<p>Welcome, {{ user.username }}!
 
 <form method="POST" action="{% url 'logout' %}" style="display:inline;">
     {% csrf_token %}
     <button type="submit">Log out</button>
 </form>
+</p>
 
 <a href="{% url 'main_hall' %}">Back to Main Hall</a>
 
-{% if user.is_staff %}
+{% if user.is_superuser %}
+<a href="{% url 'manage_books' %}">Manage Books</a>
+<a href="{% url 'manage_users' %}">Manage Users</a>
+{% elif user.is_staff %}
 <a href="{% url 'manage_books' %}">Manage Books</a>
 {% endif %}
 
@@ -25,7 +29,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for transaction in borrowed_books %}
+        {% for transaction in page_obj.object_list %}
         <tr>
             <td>{{ transaction.book.title }}</td>
             <td>{{ transaction.book.author }}</td>
@@ -48,3 +52,28 @@
         {% endfor %}
     </tbody>
 </table>
+
+<!-- Pagination Controls -->
+<div class="pagination" style="text-align: center;">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+        <a
+            href="?page=1&title={{ request.GET.title }}&author={{ request.GET.author }}&isbn={{ request.GET.isbn }}{% if request.GET.available_only %}&available_only=true{% endif %}">&laquo;
+            first</a>
+        <a
+            href="?page={{ page_obj.previous_page_number }}&title={{ request.GET.title }}&author={{ request.GET.author }}&isbn={{ request.GET.isbn }}{% if request.GET.available_only %}&available_only=true{% endif %}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+        <a
+            href="?page={{ page_obj.next_page_number }}&title={{ request.GET.title }}&author={{ request.GET.author }}&isbn={{ request.GET.isbn }}{% if request.GET.available_only %}&available_only=true{% endif %}">next</a>
+        <a
+            href="?page={{ page_obj.paginator.num_pages }}&title={{ request.GET.title }}&author={{ request.GET.author }}&isbn={{ request.GET.isbn }}{% if request.GET.available_only %}&available_only=true{% endif %}">last
+            &raquo;</a>
+        {% endif %}
+    </span>
+</div>

@@ -5,11 +5,13 @@ from .models import User, Book, Transaction
 from .Serializers import UserSerializer, BookSerializer, TransactionSerializer
 from .forms import UserCreationForms, BookForm
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth import login
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from django.utils import timezone
 from rest_framework.views import APIView
+from django.core.paginator import Paginator
 from django.contrib import messages
 
 # Create your views here.
@@ -86,7 +88,12 @@ def main_hall(request):
     if available_only:
         books = books.filter(available_copies__gt=0)
 
-    return render(request, 'main_hall.html', {'books': books})
+    # Pagination
+    paginator = Paginator(books, 10)  # Show 10 books per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'main_hall.html', {'page_obj': page_obj})
 
 @login_required
 def my_books(request):
@@ -107,11 +114,16 @@ def my_books(request):
             book.save()
 
             return redirect('my_books')
+        
+    # Pagination
+    paginator = Paginator(borrowed_books, 10)  # Show 10 transactions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-    return render(request, 'my_books.html', {'borrowed_books': borrowed_books})
+    return render(request, 'my_books.html', {'page_obj': page_obj})
 
-# Ensure the user is both logged in and is an admin (is_staff)
-@user_passes_test(lambda u: u.is_staff)
+# Ensure that only admin (is_staff but not is_superuser) users can manage books
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
 @login_required
 def manage_books(request):
     books = Book.objects.all()
@@ -149,8 +161,65 @@ def manage_books(request):
             book.delete()
             messages.success(request, "Book deleted successfully!")
             return redirect('manage_books')
+        
+    # Pagination
+    paginator = Paginator(books, 10)  # Show 10 books per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-    return render(request, 'manage_books.html', {'books': books, 'form': BookForm()})
+    return render(request, 'manage_books.html', {'page_obj': page_obj, 'form': BookForm()})
+
+# Only superusers can manage users
+@user_passes_test(lambda u: u.is_superuser)
+def manage_users(request):
+    users = User.objects.all()
+
+    if request.method == 'POST':
+        if 'create' in request.POST:
+            form = UserCreationForms(request.POST)
+            if form.is_valid():
+                new_user = form.save()
+                messages.success(request, f"User '{new_user.username}' created successfully!")
+                return redirect('manage_users')
+            else:
+                messages.error(request, "Failed to create the user. Please check the details.")
+        
+        elif 'edit' in request.POST:
+            user_id = request.POST.get('user_id')
+            user = get_object_or_404(User, id=user_id)
+            form = UserChangeForm(request.POST, instance=user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f"User '{user.username}' updated successfully!")
+                return redirect('manage_users')
+            else:
+                messages.error(request, "Failed to update the user. Please check the details.")
+        
+        elif 'delete' in request.POST:
+            user_id = request.POST.get('user_id')
+            user = get_object_or_404(User, id=user_id)
+            if user == request.user:  # Prevent deletion of the currently logged-in user
+                messages.error(request, "You cannot delete your own account.")
+                return redirect('manage_users')
+            user.delete()
+            messages.success(request, "User deleted successfully!")
+            return redirect('manage_users')
+
+        elif 'toggle_admin' in request.POST:
+            user_id = request.POST.get('user_id')
+            user = get_object_or_404(User, id=user_id)
+            user.is_staff = not user.is_staff  # Toggle the admin status
+            user.save()
+            status = "admin" if user.is_staff else "user"
+            messages.success(request, f"User '{user.username}' is now a {status}.")
+            return redirect('manage_users')
+        
+    # Pagination
+    paginator = Paginator(users, 10)  # Show 10 users per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'manage_users.html', {'page_obj': page_obj, 'form': UserCreationForms()})
 
 def edit_book(request, book_id):
     book = get_object_or_404(Book, id=book_id)
