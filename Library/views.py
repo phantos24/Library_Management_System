@@ -147,7 +147,8 @@ def manage_books(request):
                 messages.success(request, "Book updated successfully!")
                 return redirect('manage_books')
             else:
-                messages.error(request, "Failed to add the book. there is a book with the same ISBN in the library.")
+                messages.error(request, "Failed to update the book. Please check the details.")
+
 
         elif 'delete' in request.POST:
             book_id = request.POST.get('book_id')

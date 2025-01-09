@@ -19,6 +19,6 @@ class BookForm(forms.ModelForm):
 
     def clean_isbn(self):
         isbn = self.cleaned_data['isbn']
-        if Book.objects.filter(isbn=isbn).exists():
+        if Book.objects.filter(isbn=isbn).exclude(id=self.instance.id).exists():
             raise forms.ValidationError("A book with this ISBN already exists.")
         return isbn
