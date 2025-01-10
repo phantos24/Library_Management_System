@@ -14,41 +14,38 @@ from rest_framework.views import APIView
 from django.core.paginator import Paginator
 from django.contrib import messages
 
-# Create your views here.
 
-#Homepage view
+# View for the homepage
 def homepage(request):
-    # If the user is authenticated, redirect them to another page.
+    # If the user is authenticated, redirect them to Main Hall.
     if request.user.is_authenticated:
-        return redirect('main_hall')
-
-    # Initialize the authentication form
-    form = AuthenticationForm()
-
-    # Render the homepage template
+        return redirect('main_hall')  
+    
+    form = AuthenticationForm()     # Initialize the authentication form
     return render(request, 'homepage.html', {'form': form})
 
+# User registration view
 def register(request):
     if request.user.is_authenticated:
-        return redirect('main_hall')
+        return redirect('main_hall')   # Redirect logged-in users
 
     if request.method == 'POST':
         form = UserCreationForms(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save()   # Save the new user
             login(request, user)  # Log the user in immediately after registration
-            return redirect('homepage')  # Redirect to homepage or another page
+            return redirect('homepage')
     else:
         form = UserCreationForms()
     return render(request, 'register.html', {'form': form})
 
+# Main hall view for displaying and borrowing books
 @login_required
 def main_hall(request):
-    available_only = request.GET.get('available_only', False)
-    # Get the filter parameters from the request
-    title = request.GET.get('title', None)
-    author = request.GET.get('author', None)
-    isbn = request.GET.get('isbn', None)
+    available_only = request.GET.get('available_only', False)  # Filter for available books
+    title = request.GET.get('title', None)  # Search by title
+    author = request.GET.get('author', None)  # Search by author
+    isbn = request.GET.get('isbn', None)  # Search by isbn
 
     # Filter the books based on the query parameters
     books = Book.objects.all()
@@ -61,6 +58,7 @@ def main_hall(request):
         books = books.filter(isbn__icontains=isbn)  # Case-insensitive search for ISBN
 
     if request.method == 'POST':
+        # Borrow a book
         book_id = request.POST.get('book_id')
         try:
             book = Book.objects.get(id=book_id)
@@ -88,19 +86,22 @@ def main_hall(request):
     if available_only:
         books = books.filter(available_copies__gt=0)
 
-    # Pagination
+    # Pagination setup
     paginator = Paginator(books, 10)  # Show 10 books per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'main_hall.html', {'page_obj': page_obj})
 
+
+# View for managing borrowed books
 @login_required
 def my_books(request):
     # Get both borrowed and returned books
     borrowed_books = Transaction.objects.filter(user=request.user).order_by('-checkout_date')
 
     if request.method == 'POST':
+        # Return a borrowed book
         transaction_id = request.POST.get('transaction_id')
         transaction = Transaction.objects.get(id=transaction_id, user=request.user)
         if transaction and not transaction.return_date:
@@ -115,14 +116,14 @@ def my_books(request):
 
             return redirect('my_books')
         
-    # Pagination
+    # Pagination setup
     paginator = Paginator(borrowed_books, 10)  # Show 10 transactions per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'my_books.html', {'page_obj': page_obj})
 
-# Ensure that only admin (is_staff but not is_superuser) users can manage books
+# Book management view (admins)
 @user_passes_test(lambda u: u.is_staff or u.is_superuser)
 @login_required
 def manage_books(request):
@@ -163,14 +164,14 @@ def manage_books(request):
             messages.success(request, "Book deleted successfully!")
             return redirect('manage_books')
         
-    # Pagination
+    # Pagination setup
     paginator = Paginator(books, 10)  # Show 10 books per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'manage_books.html', {'page_obj': page_obj, 'form': BookForm()})
 
-# Only superusers can manage users
+# User management view (superusers)
 @user_passes_test(lambda u: u.is_superuser)
 def manage_users(request):
     users = User.objects.all()
@@ -215,7 +216,7 @@ def manage_users(request):
             messages.success(request, f"User '{user.username}' is now a {status}.")
             return redirect('manage_users')
         
-    # Pagination
+    # Pagination setup
     paginator = Paginator(users, 10)  # Show 10 users per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -223,11 +224,13 @@ def manage_users(request):
     return render(request, 'manage_users.html', {'page_obj': page_obj, 'form': UserCreationForms()})
 
 def edit_book(request, book_id):
+    # Retrieve the book object or return a 404 error if it does not exist
     book = get_object_or_404(Book, id=book_id)
 
     if request.method == 'POST':
         form = BookForm(request.POST, instance=book)
         if form.is_valid():
+            # Save the updated book details if the form is valid
             form.save()
             return redirect('manage_books')  # Redirect to the manage books page after saving
     else:
@@ -236,6 +239,7 @@ def edit_book(request, book_id):
     return render(request, 'edit_book.html', {'form': form, 'book': book})
 
 class UserViewSet(viewsets.ModelViewSet):
+    # ViewSet for managing User objects
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -251,14 +255,17 @@ class BookViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         available = self.request.query_params.get('available')
         if available == 'true':
+            # Filter books with more than 0 available copies
             queryset = queryset.filter(available_copies__gt=0)
         return queryset
 
 class TransactionViewSet(viewsets.ModelViewSet):
+    # ViewSet for managing Transaction objects
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
 
 class BookListAPIView(APIView):
+     # API view to return a filtered list of books
     def get(self, request):
         # Get query parameters
         title = request.GET.get('title', None)
